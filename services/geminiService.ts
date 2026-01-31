@@ -1,15 +1,12 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-import { Jurisdiction, TenderAnalysis, GeneratedResponse, CompanyProfile } from "../types";
-import { JURISDICTION_CONFIGS } from "../constants";
+import { Jurisdiction, TenderAnalysis, GeneratedResponse, CompanyProfile } from "../types.ts";
+import { JURISDICTION_CONFIGS } from "../constants.ts";
 
 export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    // Safely retrieve the API key from process.env, with a fallback to empty string to prevent crash
-    const apiKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : '';
-    this.ai = new GoogleGenAI({ apiKey: apiKey || '' });
+    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   }
 
   async analyzeTender(text: string, jurisdiction: Jurisdiction): Promise<TenderAnalysis> {

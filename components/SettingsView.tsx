@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
-import { CompanyProfile, SubscriptionTier, Language } from '../types';
-import { translations } from '../translations';
+import { CompanyProfile, SubscriptionTier, Language } from '../types.ts';
+import { translations } from '../translations.ts';
 
 interface SettingsViewProps {
   profile: CompanyProfile;

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ViewState, Jurisdiction, UserSubscription, SubscriptionTier, Language } from '../types';
+import { ViewState, Jurisdiction, UserSubscription, SubscriptionTier, Language } from '../types.ts';
 
 interface SidebarProps {
   activeView: ViewState;

@@ -1,7 +1,6 @@
-
 import React from 'react';
-import { SubscriptionTier, UserSubscription, Language } from '../types';
-import { translations } from '../translations';
+import { SubscriptionTier, UserSubscription, Language } from '../types.ts';
+import { translations } from '../translations.ts';
 
 interface PricingViewProps {
   subscription: UserSubscription;

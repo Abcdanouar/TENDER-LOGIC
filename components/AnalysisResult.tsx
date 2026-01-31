@@ -1,7 +1,6 @@
-
 import React from 'react';
-import { TenderAnalysis, SubscriptionTier, Language } from '../types';
-import { translations } from '../translations';
+import { TenderAnalysis, SubscriptionTier, Language } from '../types.ts';
+import { translations } from '../translations.ts';
 
 interface AnalysisResultProps {
   analysis: TenderAnalysis;

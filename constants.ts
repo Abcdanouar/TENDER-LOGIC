@@ -1,5 +1,4 @@
-
-import { Jurisdiction, SubscriptionTier } from './types';
+import { Jurisdiction, SubscriptionTier } from './types.ts';
 
 export const JURISDICTION_CONFIGS: Record<Jurisdiction, { name: string; law: string; prompt: string }> = {
   [Jurisdiction.MOROCCO]: {

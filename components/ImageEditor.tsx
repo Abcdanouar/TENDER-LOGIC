@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import { GeminiService } from '../services/geminiService';
+import { GeminiService } from '../services/geminiService.ts';
 
 const ImageEditor: React.FC = () => {
   const [image, setImage] = useState<string | null>(null);

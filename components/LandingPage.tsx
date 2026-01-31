@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
-import { Language, SubscriptionTier } from '../types';
-import { translations, TranslationSet } from '../translations';
-import { GeminiService } from '../services/geminiService';
+import { Language, SubscriptionTier } from '../types.ts';
+import { translations, TranslationSet } from '../translations.ts';
+import { GeminiService } from '../services/geminiService.ts';
 
 interface LandingPageProps {
   onStart: () => void;

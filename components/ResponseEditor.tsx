@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import { GeneratedResponse, ExportSettings } from '../types';
+import { GeneratedResponse, ExportSettings } from '../types.ts';
 
 interface ResponseEditorProps {
   proposal: GeneratedResponse;

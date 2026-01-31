@@ -1,20 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
-import { ViewState, Jurisdiction, TenderAnalysis, GeneratedResponse, CompanyProfile, UserSubscription, SubscriptionTier, Language } from './types';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import FileUploadZone from './components/FileUploadZone';
-import AnalysisResult from './components/AnalysisResult';
-import ResponseEditor from './components/ResponseEditor';
-import ImageEditor from './components/ImageEditor';
-import ProgressOverlay from './components/ProgressOverlay';
-import SettingsView from './components/SettingsView';
-import PricingView from './components/PricingView';
-import LandingPage from './components/LandingPage';
-import CheckoutModal from './components/CheckoutModal';
-import TeamWorkspace from './components/TeamWorkspace';
-import { GeminiService } from './services/geminiService';
-import { PRICING_TIERS } from './constants';
+import { ViewState, Jurisdiction, TenderAnalysis, GeneratedResponse, CompanyProfile, UserSubscription, SubscriptionTier, Language } from './types.ts';
+import Sidebar from './components/Sidebar.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import FileUploadZone from './components/FileUploadZone.tsx';
+import AnalysisResult from './components/AnalysisResult.tsx';
+import ResponseEditor from './components/ResponseEditor.tsx';
+import ImageEditor from './components/ImageEditor.tsx';
+import ProgressOverlay from './components/ProgressOverlay.tsx';
+import SettingsView from './components/SettingsView.tsx';
+import PricingView from './components/PricingView.tsx';
+import LandingPage from './components/LandingPage.tsx';
+import CheckoutModal from './components/CheckoutModal.tsx';
+import TeamWorkspace from './components/TeamWorkspace.tsx';
+import { GeminiService } from './services/geminiService.ts';
+import { PRICING_TIERS } from './constants.ts';
 
 const ANALYSIS_STEPS = [
   { id: 'init', label: 'Waking up Gemini 3 Pro' },
@@ -248,7 +247,7 @@ const App: React.FC = () => {
              <div className="flex bg-slate-100 rounded-lg p-1">
                 <button 
                   onClick={() => setLang(Language.EN)}
-                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${lang === Language.EN ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${lang === Language.EN ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-50'}`}
                 >
                   EN
                 </button>
