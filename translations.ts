@@ -1,7 +1,113 @@
 
 import { Language } from './types';
 
-export const translations = {
+export interface TranslationSet {
+  heroTag: string;
+  heroTitle: string;
+  heroDesc: string;
+  startJourney: string;
+  successStories: string;
+  logoWallTitle: string;
+  statHeading: string;
+  statValue: string;
+  statValueDesc: string;
+  statMembers: string;
+  statMembersDesc: string;
+  statWinRate: string;
+  statWinRateDesc: string;
+  featuresHeading: string;
+  featuresSubheading: string;
+  feature1Title: string;
+  feature1Desc: string;
+  feature2Title: string;
+  feature2Desc: string;
+  feature3Title: string;
+  feature3Desc: string;
+  feature4Title: string;
+  feature4Desc: string;
+  feature5Title: string;
+  feature5Desc: string;
+  feature6Title: string;
+  feature6Desc: string;
+  deepLearningTag: string;
+  complianceHeading: string;
+  complianceSubheading: string;
+  complianceList: string[];
+  explorePlatform: string;
+  visualAiHeading: string;
+  visualAiSubheading: string;
+  visualAiPrompt: string;
+  visualAiButton: string;
+  visualAiPlaceholder: string;
+  galleryHeading: string;
+  gallerySubheading: string;
+  jurisdictionsHeading: string;
+  jurisdictionsSubheading: string;
+  jurisdiction1Name: string;
+  jurisdiction1Desc: string;
+  jurisdiction2Name: string;
+  jurisdiction2Desc: string;
+  jurisdiction3Name: string;
+  jurisdiction3Desc: string;
+  jurisdiction4Name: string;
+  jurisdiction4Desc: string;
+  pricingHeading: string;
+  pricingSubheading: string;
+  pricingPlans: any[];
+  testimonialsHeading: string;
+  testimonialsTag: string;
+  ctaHeading: string;
+  ctaSubheading: string;
+  ctaButton: string;
+  navAiEngine: string;
+  navServices: string;
+  navJurisdiction: string;
+  navTestimonials: string;
+  navPricing: string;
+  signIn: string;
+  footerCopy: string;
+  chatBubble: string;
+  loginPrompt: string;
+  footerCol1: string;
+  footerCol2: string;
+  footerCol3: string;
+  footerCol4: string;
+  ragSourceTitle: string;
+  ragSourceDesc: string;
+  ragActiveBadge: string;
+  ragArchivePlaceholder: string;
+  checkoutTitle: string;
+  checkoutPlan: string;
+  checkoutCardNumber: string;
+  checkoutExpiry: string;
+  checkoutCVV: string;
+  checkoutProcessing: string;
+  checkoutSuccess: string;
+  checkoutPayNow: string;
+  checkoutTotal: string;
+  paymentMethodLabel: string;
+  methodCard: string;
+  methodTransfer: string;
+  methodPaypal: string;
+  methodCMI: string;
+  transferDetails: string;
+  teamTitle: string;
+  teamSub: string;
+  inviteEmail: string;
+  inviteLink: string;
+  inviteButton: string;
+  roleLabel: string;
+  adminRole: string;
+  editorRole: string;
+  viewerRole: string;
+  pendingInvites: string;
+  copyLink: string;
+  inviteSuccess: string;
+  inviteLinkCreated: string;
+  noPending: string;
+}
+
+export const translations: Record<Language, TranslationSet> = {
   [Language.EN]: {
     heroTag: "Next-Gen B2B SaaS",
     heroTitle: "The AI Engine for Global Procurement",
@@ -44,6 +150,14 @@ export const translations = {
     gallerySubheading: "Transform complex technical requirements into stunning visual assets for your technical memory.",
     jurisdictionsHeading: "One Platform. All Jurisdictions.",
     jurisdictionsSubheading: "Switch procurement contexts with a single click. TenderLogic Global updates its internal scoring logic to match regional laws and evaluation standards.",
+    jurisdiction1Name: "Morocco (CPS/RC)",
+    jurisdiction1Desc: "Full support for Decree No. 2-22-431.",
+    jurisdiction2Name: "European Union",
+    jurisdiction2Desc: "Compliance with Directive 2014/24/EU.",
+    jurisdiction3Name: "United States",
+    jurisdiction3Desc: "Strict adherence to FAR/DFARS standards.",
+    jurisdiction4Name: "United Kingdom",
+    jurisdiction4Desc: "Post-Brexit PCR 2015 alignment.",
     pricingHeading: "Built for Professional Bidding",
     pricingSubheading: "Choose the tier that fits your firm's growth trajectory.",
     pricingPlans: [
@@ -170,6 +284,14 @@ export const translations = {
     gallerySubheading: "Transformez des exigences techniques complexes en superbes visuels pour votre mémoire technique.",
     jurisdictionsHeading: "Une Plateforme. Toutes les Juridictions.",
     jurisdictionsSubheading: "Changez de contexte de passation en un clic. TenderLogic met à jour sa logique selon les lois régionales.",
+    jurisdiction1Name: "Maroc (CPS/RC)",
+    jurisdiction1Desc: "Conformité totale au décret n° 2-22-431.",
+    jurisdiction2Name: "Union Européenne",
+    jurisdiction2Desc: "Respect de la directive 2014/24/UE.",
+    jurisdiction3Name: "États-Unis",
+    jurisdiction3Desc: "Adhérence stricte aux normes FAR/DFARS.",
+    jurisdiction4Name: "Royaume-Uni",
+    jurisdiction4Desc: "Alignement sur les normes PCR 2015.",
     pricingHeading: "Conçu pour la Performance",
     pricingSubheading: "Choisissez le forfait qui correspond à la croissance de votre entreprise.",
     pricingPlans: [
@@ -261,7 +383,7 @@ export const translations = {
     startJourney: "ابدأ التحليل الذكي",
     successStories: "دراسات الحالة",
     logoWallTitle: "موثوق من قادة الهندسة الذين يتعاملون مع اختصاصات في",
-    statHeading: "بنيت على آلاف الساعات من تحليل بيانات المشتريات المملوكة.",
+    statHeading: "بنيت على آلاف الساعات من تحليل بيانات المشتريات المملوطة.",
     statValue: "القيمة المحللة",
     statValueDesc: "إجمالي قيمة العقود التي تمت معالجتها وتحليلها بواسطة بنية Gemini 3 Pro الفنية الخاصة بنا.",
     statMembers: "المؤسسات",
@@ -296,6 +418,14 @@ export const translations = {
     gallerySubheading: "حول المتمتطلبات الفنية المعقدة إلى أصول بصرية مذهلة لذاكرتك التقنية.",
     jurisdictionsHeading: "منصة واحدة. جميع الاختصاصات.",
     jurisdictionsSubheading: "قم بتغيير سياق المشتريات بنقرة واحدة. نقوم بتحديث منطق التسجيل ليتوافق مع القوانين الإقليمية.",
+    jurisdiction1Name: "المغرب (CPS/RC)",
+    jurisdiction1Desc: "دعم كامل للمرسوم رقم 2-22-431.",
+    jurisdiction2Name: "الاتحاد الأوروبي",
+    jurisdiction2Desc: "الامتثال للتوجيه 2014/24/EU.",
+    jurisdiction3Name: "الولايات المتحدة",
+    jurisdiction3Desc: "التزام صارم بمعايير FAR/DFARS.",
+    jurisdiction4Name: "المملكة المتحدة",
+    jurisdiction4Desc: "التوافق مع معايير PCR 2015.",
     pricingHeading: "مصمم للعطاءات الاحترافية",
     pricingSubheading: "اختر الباقة التي تناسب مسار نمو شركتك.",
     pricingPlans: [

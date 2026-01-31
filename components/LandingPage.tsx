@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Language, SubscriptionTier } from '../types';
-import { translations } from '../translations';
+import { translations, TranslationSet } from '../translations';
 import { GeminiService } from '../services/geminiService';
 
 interface LandingPageProps {
@@ -25,7 +25,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang, onSel
   const [generatedVisual, setGeneratedVisual] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [galleryImages, setGalleryImages] = useState<(string | null)[]>([null, null, null, null]);
-  const t = translations[lang];
+  const t: TranslationSet = translations[lang];
   const gemini = new GeminiService();
 
   useEffect(() => {
