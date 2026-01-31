@@ -1,0 +1,7 @@
+{
+  "name": "TenderLogic Global",
+  "description": "Enterprise-grade B2B SaaS for automated tender analysis and response generation, supporting international jurisdictions (MA, EU, USA, UK) with advanced Gemini AI integration.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
