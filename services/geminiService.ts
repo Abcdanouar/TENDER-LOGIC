@@ -6,6 +6,7 @@ export class GeminiService {
   constructor() {}
 
   private getClient() {
+    // يتم حقن API_KEY بواسطة Vite عند البناء
     return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   }
 
@@ -13,11 +14,12 @@ export class GeminiService {
     const ai = this.getClient();
     const config = JURISDICTION_CONFIGS[jurisdiction];
     
+    // استخدام gemini-3-pro-preview للمهام التحليلية المعقدة
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: `Context: ${config.prompt}\n\nDocument Text:\n${text.substring(0, 500000)}`,
       config: {
-        systemInstruction: `You are a high-level procurement legal analyst. Extract mission-critical tender information. Output MUST be in pure JSON format.`,
+        systemInstruction: `You are an elite procurement analyst. Extract critical data from the tender document. Return ONLY valid JSON.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -35,7 +37,7 @@ export class GeminiService {
                 properties: {
                   clause: { type: Type.STRING },
                   risk: { type: Type.STRING },
-                  level: { type: Type.STRING, description: "High, Medium, or Low" }
+                  level: { type: Type.STRING }
                 }
               }
             }
@@ -48,8 +50,8 @@ export class GeminiService {
     try {
       return JSON.parse(response.text || '{}');
     } catch (e) {
-      console.error("JSON parsing failed for analysis", e);
-      throw new Error("Analysis failed to produce structured data.");
+      console.error("Failed to parse AI response:", e);
+      throw new Error("Could not parse tender analysis data.");
     }
   }
 
@@ -58,22 +60,22 @@ export class GeminiService {
     const config = JURISDICTION_CONFIGS[jurisdiction];
     
     const ragContext = company.bidHistory 
-      ? `### HISTORICAL WINNING BID ARCHIVE (RAG SOURCE) ###\n${company.bidHistory}\n\n`
+      ? `### HISTORICAL CONTEXT ###\n${company.bidHistory}\n\n`
       : "";
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: `${ragContext}Tender Analysis: ${JSON.stringify(analysis)}\nCompany Profile: ${JSON.stringify(company)}`,
       config: {
-        systemInstruction: `${config.prompt}. Generate a professional 'Mémoire Technique'. If RAG context is provided, prioritize the tone and technical strategies found within it. Output must be valid JSON.`,
+        systemInstruction: `${config.prompt}. Write a high-winning 'Mémoire Technique'. Use historical context for tone if available. Return JSON.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            technicalMemory: { type: Type.STRING, description: "Full technical proposal in Markdown format." },
+            technicalMemory: { type: Type.STRING },
             complianceChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
-            estimatedScore: { type: Type.NUMBER, description: "Score from 0-100 based on rubric match." },
-            ragInsights: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Specific winning strategies reused." }
+            estimatedScore: { type: Type.NUMBER },
+            ragInsights: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
           required: ["technicalMemory", "complianceChecklist", "estimatedScore"]
         }
@@ -83,8 +85,8 @@ export class GeminiService {
     try {
       return JSON.parse(response.text || '{}');
     } catch (e) {
-      console.error("JSON parsing failed for proposal", e);
-      throw new Error("Proposal generation failed to produce structured data.");
+      console.error("Failed to parse AI proposal response:", e);
+      throw new Error("Could not generate technical proposal.");
     }
   }
 
@@ -93,23 +95,16 @@ export class GeminiService {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
-        parts: [
-          { text: `High-fidelity engineering concept visualization: ${prompt}. Cinematic 4k, professional lighting, technical realism.` }
-        ]
+        parts: [{ text: `Professional engineering visualization: ${prompt}` }]
       },
       config: {
-        imageConfig: {
-          aspectRatio: "16:9"
-        }
+        imageConfig: { aspectRatio: "16:9" }
       }
     });
 
-    const parts = response.candidates?.[0]?.content?.parts;
-    if (parts) {
-      for (const part of parts) {
-        if (part.inlineData) {
-          return `data:image/png;base64,${part.inlineData.data}`;
-        }
+    for (const part of response.candidates?.[0]?.content.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
       }
     }
     return undefined;
@@ -122,17 +117,14 @@ export class GeminiService {
       contents: {
         parts: [
           { inlineData: { data: base64Image, mimeType: 'image/png' } },
-          { text: `Edit this technical diagram as follows: ${prompt}` }
+          { text: prompt }
         ]
       }
     });
 
-    const parts = response.candidates?.[0]?.content?.parts;
-    if (parts) {
-      for (const part of parts) {
-        if (part.inlineData) {
-          return `data:image/png;base64,${part.inlineData.data}`;
-        }
+    for (const part of response.candidates?.[0]?.content.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
       }
     }
     return undefined;
