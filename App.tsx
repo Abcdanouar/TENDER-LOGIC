@@ -11,6 +11,8 @@ import ProgressOverlay from './components/ProgressOverlay';
 import SettingsView from './components/SettingsView';
 import PricingView from './components/PricingView';
 import LandingPage from './components/LandingPage';
+import CheckoutModal from './components/CheckoutModal';
+import TeamWorkspace from './components/TeamWorkspace';
 import { GeminiService } from './services/geminiService';
 import { PRICING_TIERS } from './constants';
 
@@ -40,6 +42,7 @@ const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<TenderAnalysis | null>(null);
   const [proposal, setProposal] = useState<GeneratedResponse | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<SubscriptionTier | null>(null);
   
   const [subscription, setSubscription] = useState<UserSubscription>({
     tier: SubscriptionTier.FREE,
@@ -51,7 +54,8 @@ const App: React.FC = () => {
     name: "Elite Engineering Group",
     experience: "15 years in civil infrastructure and digital transformation.",
     certifications: ["ISO 9001", "ISO 27001", "Class A Civil Works"],
-    pastProjects: ["Smart City Rabat", "Casablanca Metro Extension"]
+    pastProjects: ["Smart City Rabat", "Casablanca Metro Extension"],
+    bidHistory: "" 
   });
 
   const gemini = new GeminiService();
@@ -61,10 +65,6 @@ const App: React.FC = () => {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  if (activeView === 'landing') {
-    return <LandingPage onStart={() => setActiveView('dashboard')} lang={lang} setLang={setLang} />;
-  }
-
   const handleUpgrade = (tier: SubscriptionTier) => {
     const tierData = PRICING_TIERS.find(t => t.id === tier);
     setSubscription({
@@ -72,7 +72,37 @@ const App: React.FC = () => {
       tendersUsed: 0,
       maxTenders: tierData?.limit ?? null
     });
+    setPendingPlan(null);
     setActiveView('dashboard');
+  };
+
+  const handleSelectPlan = (tierId: SubscriptionTier) => {
+    if (tierId === SubscriptionTier.FREE) {
+      handleUpgrade(SubscriptionTier.FREE);
+    } else {
+      setPendingPlan(tierId);
+    }
+  };
+
+  const checkFeatureAccess = (view: ViewState): boolean => {
+    if (view === 'generator' || view === 'image-editor' || view === 'team') {
+       if (subscription.tier === SubscriptionTier.FREE) {
+         setActiveView('pricing');
+         return false;
+       }
+       if (view === 'team' && subscription.tier !== SubscriptionTier.ENTERPRISE) {
+         setActiveView('pricing');
+         return false;
+       }
+    }
+    return true;
+  };
+
+  const navigateTo = (view: ViewState) => {
+    if (checkFeatureAccess(view)) {
+      setActiveView(view);
+      setIsSidebarOpen(false);
+    }
   };
 
   const simulateProgress = (steps: any[], onComplete: () => Promise<void>) => {
@@ -95,7 +125,6 @@ const App: React.FC = () => {
   const handleFileUpload = async (fileContent: string) => {
     if (subscription.maxTenders !== null && subscription.tendersUsed >= subscription.maxTenders) {
       setActiveView('pricing');
-      alert(`Capacity reached. Upgrade to Pro for unlimited tenders.`);
       return;
     }
 
@@ -141,6 +170,22 @@ const App: React.FC = () => {
     }
   };
 
+  if (activeView === 'landing') {
+    return (
+      <>
+        <LandingPage onStart={() => setActiveView('dashboard')} lang={lang} setLang={setLang} onSelectPlan={handleSelectPlan} />
+        {pendingPlan && (
+          <CheckoutModal 
+            tierId={pendingPlan} 
+            onClose={() => setPendingPlan(null)} 
+            onSuccess={() => handleUpgrade(pendingPlan)} 
+            lang={lang} 
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
       {loading && (
@@ -151,10 +196,19 @@ const App: React.FC = () => {
         />
       )}
 
+      {pendingPlan && (
+        <CheckoutModal 
+          tierId={pendingPlan} 
+          onClose={() => setPendingPlan(null)} 
+          onSuccess={() => handleUpgrade(pendingPlan)} 
+          lang={lang} 
+        />
+      )}
+
       {/* Mobile Header */}
       <div className="lg:hidden bg-white border-b border-slate-100 p-4 flex justify-between items-center sticky top-0 z-40">
         <div className="flex items-center space-x-2">
-           <div className="w-8 h-8 bg-[#0066FF] rounded-lg flex items-center justify-center text-white font-bold">TL</div>
+           <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold">TL</div>
            <span className="font-extrabold text-slate-900 tracking-tight">TenderLogic</span>
         </div>
         <button 
@@ -169,7 +223,7 @@ const App: React.FC = () => {
 
       <Sidebar 
         activeView={activeView} 
-        setActiveView={(v) => { setActiveView(v); setIsSidebarOpen(false); }} 
+        setActiveView={navigateTo} 
         jurisdiction={jurisdiction}
         setJurisdiction={setJurisdiction}
         subscription={subscription}
@@ -180,18 +234,17 @@ const App: React.FC = () => {
       
       <main className={`flex-1 bg-[#fcfcfd] min-h-screen overflow-y-auto ${lang === Language.AR ? 'text-right' : 'text-left'}`}>
         <header className="hidden lg:flex sticky top-0 z-10 bg-[#fcfcfd]/80 backdrop-blur-md px-12 py-8 justify-between items-center border-b border-slate-100">
-          <div>
+          <div className={lang === Language.AR ? 'text-right' : 'text-left'}>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
               {activeView === 'dashboard' ? (lang === Language.AR ? 'نظرة عامة' : 'Overview') : activeView.replace('-', ' ')}
             </h1>
-            <nav className="flex items-center space-x-2 text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-widest rtl:space-x-reverse">
-              <span className="cursor-pointer hover:text-[#0066FF]" onClick={() => setActiveView('landing')}>Home</span>
+            <nav className={`flex items-center space-x-2 text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-widest rtl:space-x-reverse ${lang === Language.AR ? 'flex-row-reverse' : ''}`}>
+              <span className="cursor-pointer hover:text-dayone-orange" onClick={() => setActiveView('landing')}>Home</span>
               <span>/</span>
-              <span className="text-[#0066FF]">{activeView}</span>
+              <span className="text-dayone-orange">{activeView}</span>
             </nav>
           </div>
           <div className="flex items-center space-x-6 rtl:space-x-reverse">
-             {/* Language Switcher in App Header */}
              <div className="flex bg-slate-100 rounded-lg p-1">
                 <button 
                   onClick={() => setLang(Language.EN)}
@@ -216,7 +269,7 @@ const App: React.FC = () => {
                 <p className="text-sm font-bold text-slate-900">Elite User</p>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">{subscription.tier} License</p>
              </div>
-             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-400 border border-slate-200 cursor-pointer hover:border-[#0066FF] transition-all">
+             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-400 border border-slate-200 cursor-pointer hover:border-dayone-orange transition-all">
                EU
              </div>
           </div>
@@ -225,7 +278,7 @@ const App: React.FC = () => {
         <div className="px-4 lg:px-12 pb-12 max-w-7xl mx-auto mt-6 lg:mt-0">
           {activeView === 'dashboard' && (
             <Dashboard 
-              onNewTender={() => setActiveView('analysis')} 
+              onNewTender={() => navigateTo('analysis')} 
               jurisdiction={jurisdiction}
             />
           )}
@@ -240,6 +293,7 @@ const App: React.FC = () => {
               onGenerate={handleGenerateProposal} 
               isGenerating={loading}
               tier={subscription.tier}
+              lang={lang}
             />
           )}
 
@@ -251,12 +305,21 @@ const App: React.FC = () => {
             <ImageEditor />
           )}
 
+          {activeView === 'team' && (
+            <TeamWorkspace lang={lang} />
+          )}
+
           {activeView === 'settings' && (
-            <SettingsView profile={companyProfile} onSave={setCompanyProfile} />
+            <SettingsView 
+              profile={companyProfile} 
+              onSave={setCompanyProfile} 
+              tier={subscription.tier}
+              lang={lang}
+            />
           )}
 
           {activeView === 'pricing' && (
-            <PricingView subscription={subscription} onUpgrade={handleUpgrade} />
+            <PricingView subscription={subscription} onUpgrade={handleSelectPlan} lang={lang} />
           )}
         </div>
       </main>

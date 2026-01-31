@@ -18,6 +18,21 @@ export enum SubscriptionTier {
   ENTERPRISE = 'ENTERPRISE'
 }
 
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  EDITOR = 'EDITOR',
+  VIEWER = 'VIEWER'
+}
+
+export interface Invitation {
+  id: string;
+  email?: string;
+  role: UserRole;
+  token: string;
+  status: 'PENDING' | 'ACCEPTED';
+  createdAt: string;
+}
+
 export interface UserSubscription {
   tier: SubscriptionTier;
   tendersUsed: number;
@@ -43,12 +58,14 @@ export interface CompanyProfile {
   experience: string;
   certifications: string[];
   pastProjects: string[];
+  bidHistory?: string; // Long-form text containing 10 years of successful bid excerpts (RAG Source)
 }
 
 export interface GeneratedResponse {
   technicalMemory: string;
   complianceChecklist: string[];
   estimatedScore: number;
+  ragInsights?: string[]; // New: specific pointers found in historical data
 }
 
 export interface ExportSettings {
@@ -60,4 +77,4 @@ export interface ExportSettings {
   headerFooterText: string;
 }
 
-export type ViewState = 'landing' | 'dashboard' | 'analysis' | 'generator' | 'image-editor' | 'settings' | 'pricing';
+export type ViewState = 'landing' | 'dashboard' | 'analysis' | 'generator' | 'image-editor' | 'settings' | 'pricing' | 'team';

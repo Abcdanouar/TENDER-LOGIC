@@ -1,48 +1,55 @@
 
 import React from 'react';
-import { SubscriptionTier, UserSubscription } from '../types';
-import { PRICING_TIERS } from '../constants';
+import { SubscriptionTier, UserSubscription, Language } from '../types';
+import { translations } from '../translations';
 
 interface PricingViewProps {
   subscription: UserSubscription;
   onUpgrade: (tier: SubscriptionTier) => void;
+  lang: Language;
 }
 
-const PricingView: React.FC<PricingViewProps> = ({ subscription, onUpgrade }) => {
+const PricingView: React.FC<PricingViewProps> = ({ subscription, onUpgrade, lang }) => {
+  const t = translations[lang || 'en'];
+
   return (
     <div className="max-w-6xl mx-auto space-y-20 animate-in fade-in slide-in-from-bottom-6 duration-700 py-12">
       <div className="text-center">
-        <h2 className="text-5xl font-extrabold text-slate-900 tracking-tighter">Choose your bidding edge.</h2>
-        <p className="mt-6 text-xl text-slate-500 font-medium">Transparent pricing for growing procurement teams.</p>
+        <h2 className="text-5xl font-extrabold text-slate-900 tracking-tighter">{t.pricingHeading}</h2>
+        <p className="mt-6 text-xl text-slate-500 font-medium">{t.pricingSubheading}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-        {PRICING_TIERS.map((tier) => {
-          const isCurrent = subscription.tier === tier.id;
-          const isPro = tier.id === SubscriptionTier.PRO;
+        {t.pricingPlans.map((plan: any) => {
+          const isCurrent = subscription.tier === plan.id;
+          const isPro = plan.popular;
           
           return (
             <div 
-              key={tier.id}
+              key={plan.id}
               className={`relative bg-white rounded-[40px] border p-12 flex flex-col transition-all duration-500 hover:scale-[1.03] ${
-                isPro ? 'border-[#0066FF] ring-8 ring-[#0066FF]/5 dayone-shadow shadow-[#0066FF]/10' : 'border-slate-100 dayone-shadow'
+                isPro ? 'border-dayone-orange ring-8 ring-orange-50 dayone-shadow shadow-orange-100/50 scale-[1.05] z-10' : 'border-slate-100 dayone-shadow'
               }`}
             >
+              {isPro && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-dayone-orange text-white px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
+                  Most Popular
+                </div>
+              )}
+              
               <div className="mb-12">
-                <h3 className="text-2xl font-bold text-slate-900">{tier.name}</h3>
-                <p className="text-[14px] text-slate-400 mt-2 font-medium leading-relaxed">{tier.description}</p>
-                <div className="mt-8 flex items-baseline">
-                  <span className="text-5xl font-extrabold text-slate-900 tracking-tighter">{tier.price}</span>
-                  {tier.price !== 'Custom' && tier.id !== SubscriptionTier.FREE && (
-                    <span className="text-slate-400 ml-2 font-bold text-sm">/mo</span>
-                  )}
+                <h3 className="text-2xl font-bold text-slate-900">{plan.name}</h3>
+                <p className="text-[12px] text-slate-400 mt-2 font-bold uppercase tracking-widest">{plan.tag}</p>
+                <div className="mt-8 flex items-baseline justify-center md:justify-start">
+                  <span className="text-5xl font-extrabold text-slate-900 tracking-tighter">{plan.price}</span>
+                  <span className="text-slate-400 ml-2 font-bold text-sm">{plan.unit}</span>
                 </div>
               </div>
 
               <div className="space-y-5 mb-12 flex-1">
-                {tier.features.map((feature, idx) => (
+                {plan.features.map((feature: string, idx: number) => (
                   <div key={idx} className="flex items-center text-[14px] font-semibold text-slate-600">
-                    <div className={`w-5 h-5 rounded-full mr-4 flex items-center justify-center ${isPro ? 'bg-[#0066FF] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <div className={`w-5 h-5 rounded-full mr-4 flex items-center justify-center flex-shrink-0 ${isPro ? 'bg-dayone-orange text-white' : 'bg-slate-100 text-slate-400'}`}>
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -54,16 +61,16 @@ const PricingView: React.FC<PricingViewProps> = ({ subscription, onUpgrade }) =>
 
               <button
                 disabled={isCurrent}
-                onClick={() => onUpgrade(tier.id)}
+                onClick={() => onUpgrade(plan.id as SubscriptionTier)}
                 className={`w-full py-5 rounded-[24px] font-bold text-[15px] transition-all ${
                   isCurrent 
                     ? 'bg-slate-50 text-slate-300 cursor-default border border-slate-100' 
                     : isPro
-                      ? 'bg-[#0066FF] text-white hover:bg-blue-700 shadow-xl shadow-blue-200'
+                      ? 'bg-dayone-orange text-white hover:opacity-90 shadow-xl shadow-orange-200'
                       : 'bg-slate-900 text-white hover:bg-black shadow-xl shadow-slate-200'
                 }`}
               >
-                {isCurrent ? 'Current Plan' : 'Select Plan'}
+                {isCurrent ? 'Current Plan' : plan.button}
               </button>
             </div>
           );

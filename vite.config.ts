@@ -6,12 +6,14 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    emptyOutDir: true
   },
   server: {
     port: 3000
   },
   define: {
-    'process.env': process.env
+    // Specifically define the API_KEY to avoid passing the entire process.env object
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
   }
 });

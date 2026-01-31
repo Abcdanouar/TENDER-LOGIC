@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Language } from '../types';
+import { Language, SubscriptionTier } from '../types';
 import { translations } from '../translations';
 import { GeminiService } from '../services/geminiService';
 
@@ -8,20 +8,40 @@ interface LandingPageProps {
   onStart: () => void;
   lang: Language;
   setLang: (l: Language) => void;
+  onSelectPlan: (tierId: SubscriptionTier) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => {
+const GALLERY_SAMPLES = [
+  { prompt: "High-speed rail station architecture, futuristic design, photorealistic, cinematic lighting", label: "Infrastructure" },
+  { prompt: "Large scale offshore wind farm, stormy sea, professional engineering photography", label: "Energy" },
+  { prompt: "Modern digital data center interior, glowing neon racks, clean aesthetic", label: "Technology" },
+  { prompt: "Sustainable urban park development, smart city integration, high-end 3D render", label: "Urban Planning" }
+];
+
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang, onSelectPlan }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [visualPrompt, setVisualPrompt] = useState('');
   const [generatedVisual, setGeneratedVisual] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([null, null, null, null]);
   const t = translations[lang];
   const gemini = new GeminiService();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
+    
+    const loadGallery = async () => {
+      const results = await Promise.all(GALLERY_SAMPLES.map(async (sample) => {
+        try {
+          return `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1486406146926-c627a92ad1ab' : '1504384308090-c894fdcc538d'}?auto=format&fit=crop&q=80&w=800`;
+        } catch(e) { return null; }
+      }));
+      setGalleryImages(results);
+    };
+    loadGallery();
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -146,22 +166,105 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
         </div>
       </section>
 
-      {/* 3. NEW: VISUAL AI SECTION */}
-      <section id="visual-ai" className="py-40 bg-white border-t border-slate-50 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none">
-           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-blue-50/50 rounded-full blur-[120px] -mt-[600px]"></div>
+      {/* 3. SHOWCASE GALLERY */}
+      <section className="py-32 bg-slate-50 border-y border-slate-100 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+           <div className="text-center mb-20 reveal">
+              <h2 className="text-3xl lg:text-5xl font-extrabold text-slate-900 mb-6">{t.galleryHeading}</h2>
+              <p className="text-slate-500 max-w-2xl mx-auto font-medium">{t.gallerySubheading}</p>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {galleryImages.map((img, idx) => (
+                <div key={idx} className="group relative bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-500 reveal" style={{ animationDelay: `${idx * 0.15}s` }}>
+                   <div className="aspect-[3/4] overflow-hidden">
+                      <img 
+                        src={img || `https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800`} 
+                        alt={GALLERY_SAMPLES[idx].label} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 grayscale-[20%] group-hover:grayscale-0"
+                      />
+                   </div>
+                   <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-slate-900/80 to-transparent">
+                      <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold rounded-full uppercase tracking-widest mb-2">{GALLERY_SAMPLES[idx].label}</span>
+                      <p className="text-white font-bold text-sm leading-tight opacity-0 group-hover:opacity-100 transition-opacity duration-300">{GALLERY_SAMPLES[idx].prompt}</p>
+                   </div>
+                </div>
+              ))}
+           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-24 reveal">
-             <div className="inline-block px-4 py-1.5 bg-slate-900 text-white text-[11px] font-bold rounded-full uppercase tracking-widest mb-6">{t.deepLearningTag}</div>
-             <h2 className="text-4xl lg:text-6xl font-extrabold text-slate-900 mb-8 tracking-tight">{t.visualAiHeading}</h2>
-             <p className="text-slate-500 max-w-3xl mx-auto text-lg lg:text-xl font-medium">{t.visualAiSubheading}</p>
-          </div>
+      </section>
 
+      {/* 4. PRICING SECTION - 3 TIERS */}
+      <section id="pricing" className="py-40 bg-white relative">
+        <div className="max-w-7xl mx-auto px-6">
+           <div className="text-center mb-24 reveal">
+              <h2 className="text-4xl lg:text-6xl font-extrabold text-slate-900 mb-8 tracking-tight uppercase leading-[0.9]">{t.pricingHeading}</h2>
+              <p className="text-slate-500 text-lg lg:text-xl font-medium max-w-2xl mx-auto">{t.pricingSubheading}</p>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+              {t.pricingPlans.map((plan: any, i: number) => (
+                <div 
+                  key={plan.name} 
+                  className={`relative p-10 lg:p-12 rounded-[48px] border transition-all duration-500 flex flex-col h-full reveal ${
+                    plan.popular 
+                      ? 'bg-white border-dayone-orange shadow-2xl shadow-orange-100/50 scale-105 z-10' 
+                      : 'bg-white border-slate-100 shadow-sm hover:shadow-xl'
+                  }`}
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                >
+                   {plan.popular && (
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-dayone-orange text-white px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap shadow-lg shadow-orange-200">
+                         {isAr ? 'الأكثر طلباً' : 'Most Popular'}
+                      </div>
+                   )}
+                   
+                   <div className="mb-10 text-center">
+                      <h4 className="text-2xl font-extrabold text-slate-900 mb-4">{plan.name}</h4>
+                      <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-8">{plan.tag}</p>
+                      <div className="flex items-baseline justify-center">
+                         <span className="text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tighter">{plan.price}</span>
+                         <span className="text-slate-400 font-bold ml-1 text-sm">{plan.unit}</span>
+                      </div>
+                   </div>
+
+                   <ul className="space-y-5 mb-12 flex-1">
+                      {plan.features.map((feat: string) => (
+                        <li key={feat} className={`flex items-start text-slate-600 font-bold text-sm ${isAr ? 'flex-row-reverse text-right' : ''}`}>
+                           <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${plan.popular ? 'bg-dayone-orange text-white' : 'bg-slate-100 text-slate-400'} ${isAr ? 'ml-3' : 'mr-3'}`}>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
+                           </div>
+                           {feat}
+                        </li>
+                      ))}
+                   </ul>
+
+                   <button 
+                     onClick={() => onSelectPlan(plan.id as SubscriptionTier)}
+                     className={`w-full py-5 rounded-2xl font-bold text-lg transition-all ${
+                       plan.popular 
+                         ? 'bg-dayone-orange text-white shadow-xl shadow-orange-200 hover:opacity-90' 
+                         : 'bg-slate-900 text-white hover:bg-black'
+                     }`}
+                   >
+                     {plan.button}
+                   </button>
+                </div>
+              ))}
+           </div>
+        </div>
+      </section>
+
+      {/* 5. VISUAL AI GENERATOR INTERACTIVE */}
+      <section id="visual-ai" className="py-40 bg-[#fcfcfd] border-y border-slate-100 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
-             <div className="flex-1 w-full space-y-8 reveal">
-                <div className="bg-[#fcfcfd] p-10 rounded-[48px] border border-slate-100 shadow-xl shadow-slate-100">
-                   <h4 className="text-xl font-extrabold text-slate-900 mb-8 uppercase tracking-tighter">{t.visualAiPrompt}</h4>
+             <div className={`flex-1 w-full space-y-8 reveal ${isAr ? 'lg:text-right' : 'lg:text-left'}`}>
+                <div className="inline-block px-4 py-1.5 bg-slate-900 text-white text-[11px] font-bold rounded-full uppercase tracking-widest mb-6">{t.deepLearningTag}</div>
+                <h2 className="text-4xl lg:text-6xl font-extrabold text-slate-900 mb-8 tracking-tight leading-tight">{t.visualAiHeading}</h2>
+                <p className="text-slate-500 text-lg lg:text-xl font-medium mb-12">{t.visualAiSubheading}</p>
+                
+                <div className="bg-white p-8 lg:p-10 rounded-[48px] border border-slate-100 shadow-2xl shadow-slate-100/50">
+                   <h4 className="text-sm font-extrabold text-slate-900 mb-6 uppercase tracking-[0.2em] opacity-40">{t.visualAiPrompt}</h4>
                    <div className="space-y-6">
                       <div className="relative">
                          <input 
@@ -169,11 +272,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
                            value={visualPrompt}
                            onChange={(e) => setVisualPrompt(e.target.value)}
                            placeholder={t.visualAiPlaceholder}
-                           className={`w-full bg-white border border-slate-200 rounded-2xl px-6 py-5 text-slate-900 font-bold focus:ring-4 focus:ring-dayone-orange/10 focus:border-dayone-orange transition-all outline-none ${isAr ? 'text-right' : 'text-left'}`}
+                           className={`w-full bg-[#f8fafc] border border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-bold focus:ring-4 focus:ring-dayone-orange/10 focus:border-dayone-orange transition-all outline-none ${isAr ? 'text-right' : 'text-left'}`}
                          />
-                         <div className={`absolute ${isAr ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-slate-300`}>
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                         </div>
                       </div>
                       <button 
                         onClick={handleGenerateVisual}
@@ -181,10 +281,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
                         className="w-full bg-dayone-orange text-white py-5 rounded-2xl font-bold text-lg hover:opacity-90 disabled:opacity-50 transition-all shadow-xl shadow-orange-100 flex items-center justify-center space-x-3"
                       >
                          {isGenerating ? (
-                            <div className="flex items-center space-x-3">
+                            <span className="flex items-center space-x-3">
                                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                               <span>{isAr ? 'جاري الإنشاء...' : 'Visualizing Concept...'}</span>
-                            </div>
+                               <span>{isAr ? 'جاري الإنشاء...' : 'Creating Asset...'}</span>
+                            </span>
                          ) : (
                             <>
                                <span>{t.visualAiButton}</span>
@@ -193,23 +293,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
                          )}
                       </button>
                    </div>
-                   <div className="mt-10 grid grid-cols-2 gap-4">
-                      {['Casablanca Tramway', 'London Data Center', 'Paris Smart Grid', 'NYC Tech Hub'].map(preset => (
-                        <button 
-                          key={preset}
-                          onClick={() => setVisualPrompt(preset)}
-                          className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white border border-slate-100 py-3 rounded-xl hover:text-dayone-orange hover:border-dayone-orange transition-all"
-                        >
-                          {preset}
-                        </button>
-                      ))}
-                   </div>
                 </div>
              </div>
 
              <div className="flex-1 w-full reveal stagger-1">
                 <div className="relative group">
-                   <div className="bg-slate-900 rounded-[60px] p-3 shadow-2xl relative overflow-hidden aspect-video flex items-center justify-center">
+                   <div className="bg-slate-900 rounded-[60px] p-3 shadow-2xl relative overflow-hidden aspect-video flex items-center justify-center border border-slate-800">
                       {generatedVisual ? (
                         <img 
                           src={generatedVisual} 
@@ -235,21 +324,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
                          </div>
                       )}
                    </div>
-                   {/* Decorators */}
-                   <div className="absolute -bottom-10 -right-6 bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 hidden lg:block animate-float">
-                      <div className="flex items-center space-x-3 mb-2 rtl:space-x-reverse">
-                         <div className="w-4 h-4 rounded-full bg-emerald-500"></div>
-                         <span className="text-sm font-extrabold text-slate-900">4K Render Ready</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 font-medium">Auto-stylized for technical memory export</p>
-                   </div>
                 </div>
              </div>
           </div>
         </div>
       </section>
 
-      {/* 4. STATISTICS */}
+      {/* 6. STATISTICS */}
       <section className="py-32 bg-white">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-3xl lg:text-5xl font-extrabold text-slate-900 mb-24 leading-snug max-w-4xl mx-auto tracking-tight">
@@ -275,7 +356,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
         </div>
       </section>
 
-      {/* 5. PRODUCT FEATURES GRID */}
+      {/* 7. PRODUCT FEATURES GRID */}
       <section id="features" className="py-32 px-6 bg-[#fcfcfd]">
         <div className="max-w-7xl mx-auto">
            <div className="text-center mb-24 reveal">
@@ -304,43 +385,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
         </div>
       </section>
 
-      {/* 6. COMPLIANCE SECTION */}
-      <section id="platform" className="py-32 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-24">
-        <div className="flex-1 reveal flex justify-center order-2 lg:order-1">
-           <div className="relative w-full max-w-md aspect-square bg-slate-50 rounded-[60px] flex items-center justify-center overflow-hidden">
-              <div className="bg-white p-10 rounded-[40px] shadow-2xl border border-slate-100 relative z-10 w-4/5 animate-float">
-                 <div className="h-4 w-1/3 bg-dayone-orange rounded-full mb-8"></div>
-                 <div className="space-y-4">
-                    <div className="h-2 w-full bg-slate-100 rounded-full"></div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full"></div>
-                    <div className="h-2 w-2/3 bg-slate-100 rounded-full"></div>
-                    <div className="mt-10 p-4 bg-orange-50 rounded-2xl border border-orange-100">
-                       <p className="text-[10px] font-extrabold text-dayone-orange uppercase tracking-widest mb-1">AI Logic Suggestion</p>
-                       <p className="text-xs text-slate-700 font-bold italic">"Expand on ISO 45001 safety protocols to meet CPS Clause 12.4 requirements."</p>
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </div>
-        <div className={`flex-1 space-y-8 reveal stagger-1 order-1 lg:order-2 ${isAr ? 'text-right' : 'text-left'}`}>
-          <div className="inline-block px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded uppercase tracking-[0.2em]">{t.deepLearningTag}</div>
-          <h3 className="text-3xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">{t.complianceHeading}</h3>
-          <p className="text-slate-500 leading-relaxed text-lg font-medium">{t.complianceSubheading}</p>
-          <ul className="space-y-5">
-            {t.complianceList.map((item: string) => (
-              <li key={item} className={`flex items-center text-slate-800 font-extrabold ${isAr ? 'flex-row-reverse justify-start' : ''}`}>
-                <div className={`w-6 h-6 bg-dayone-orange/10 rounded-full flex items-center justify-center ${isAr ? 'ml-4' : 'mr-4'}`}>
-                  <svg className="w-3.5 h-3.5 text-dayone-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                {item}
-              </li>
-            ))}
-          </ul>
-          <button onClick={onStart} className="text-slate-900 font-extrabold border-b-2 border-slate-900 hover:text-dayone-orange hover:border-dayone-orange transition-all pb-1 text-base uppercase tracking-widest">{t.explorePlatform}</button>
-        </div>
-      </section>
-
-      {/* 7. JURISDICTIONS SECTION */}
+      {/* 8. JURISDICTIONS SECTION */}
       <section id="jurisdictions" className="py-32 px-6 bg-slate-900 text-white rounded-[60px] mx-6 my-12 overflow-hidden relative">
         <div className="max-w-7xl mx-auto text-center reveal">
            <h2 className="text-4xl lg:text-6xl font-extrabold mb-10 tracking-tight">{t.jurisdictionsHeading}</h2>
@@ -359,84 +404,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
                    <p className="text-slate-400 text-xs font-medium leading-relaxed">{j.desc}</p>
                 </div>
               ))}
-           </div>
-        </div>
-      </section>
-
-      {/* 8. TESTIMONIALS */}
-      <section id="testimonials" className="py-40 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className={`flex flex-col lg:flex-row items-end justify-between mb-24 reveal ${isAr ? 'lg:flex-row-reverse' : ''}`}>
-             <div className="max-w-2xl">
-                <h2 className="text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight uppercase leading-[0.9]">{t.testimonialsHeading}</h2>
-             </div>
-             <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mt-8 lg:mt-0">{t.testimonialsTag}</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { name: 'Sarah Johnson', role: 'Bid Manager, Alstom Group', quote: lang === Language.EN ? 'TenderLogic reduced our CPS analysis time from 3 days to 45 seconds.' : (lang === Language.FR ? 'TenderLogic a réduit notre temps d\'analyse CPS de 3 jours à 45 secondes.' : 'خفضت TenderLogic وقت تحليل الـ CPS الخاص بنا من 3 أيام إلى 45 ثانية.') },
-              { name: 'Michael Chen', role: 'Operations Lead, Huawei', quote: lang === Language.EN ? 'The WPI is a game changer. We now know exactly which bids to prioritize.' : (lang === Language.FR ? 'Le WPI change la donne. Nous savons exactement quelles offres prioriser.' : 'مؤشر WPI غير قواعد اللعبة. نعرف الآن بالضبط أي العطاءات نعطيها الأولوية.') },
-              { name: 'Emily Rodriguez', role: 'Head of Bidding, Siemens', quote: lang === Language.EN ? 'A truly enterprise-grade tool. Expansion was easy.' : (lang === Language.FR ? 'Un outil de classe entreprise. L\'expansion a été facile.' : 'أداة حقيقية للمؤسسات الكبرى. كان التوسع سهلاً.') }
-            ].map((story, i) => (
-              <div key={i} className={`bg-[#fcfcfd] p-12 rounded-[40px] shadow-sm border border-slate-100 flex flex-col h-full hover:shadow-xl transition-all duration-500 reveal ${isAr ? 'text-right' : 'text-left'}`} style={{ animationDelay: `${i * 0.15}s` }}>
-                <div className="flex-1">
-                  <div className={`flex space-x-1 mb-8 ${isAr ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                     {[1,2,3,4,5].map(s => <svg key={s} className="w-5 h-5 text-dayone-orange" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>)}
-                  </div>
-                  <p className="text-slate-600 italic leading-relaxed font-medium text-lg mb-12">"{story.quote}"</p>
-                </div>
-                <div>
-                  <h5 className="text-xl font-extrabold text-slate-900 tracking-tight">{story.name}</h5>
-                  <p className="text-dayone-orange text-xs font-bold uppercase tracking-widest">{story.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 9. PRICING */}
-      <section id="pricing" className="py-32 bg-[#fcfcfd]">
-        <div className="max-w-4xl mx-auto px-6 text-center reveal">
-           <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-8 tracking-tight">{t.pricingHeading}</h2>
-           <p className="text-slate-500 text-lg font-medium mb-16">{t.pricingSubheading}</p>
-           
-           <div className={`bg-white p-12 rounded-[48px] shadow-2xl border border-slate-100 flex flex-col md:flex-row items-center gap-12 relative overflow-hidden ${isAr ? 'md:flex-row-reverse text-right' : 'text-left'}`}>
-              <div className={`absolute top-0 ${isAr ? 'left-0' : 'right-0'} bg-dayone-orange text-white px-8 py-2 font-bold text-[10px] uppercase tracking-widest ${isAr ? '-ml-6' : '-mr-6'} mt-6 ${isAr ? '-rotate-45' : 'rotate-45'}`}>Best Value</div>
-              <div className="flex-1">
-                 <h4 className="text-3xl font-extrabold text-slate-900 mb-4">{t.pricingPlan}</h4>
-                 <ul className="space-y-4">
-                    {t.pricingFeatures.map((f: string) => (
-                      <li key={f} className={`flex items-center text-slate-600 font-bold text-sm ${isAr ? 'flex-row-reverse' : ''}`}>
-                         <svg className={`w-5 h-5 text-emerald-500 ${isAr ? 'ml-3' : 'mr-3'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                         {f}
-                      </li>
-                    ))}
-                 </ul>
-              </div>
-              <div className={`md:border-slate-100 text-center ${isAr ? 'md:pr-12 md:border-r md:text-right' : 'md:pl-12 md:border-l md:text-left'}`}>
-                 <p className="text-4xl font-extrabold text-slate-900 mb-2">{t.pricingPrice}<span className="text-lg text-slate-400 font-bold">{t.pricingPriceUnit}</span></p>
-                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">{t.pricingPriceTag}</p>
-                 <button onClick={onStart} className="w-full md:w-auto bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-slate-200">{t.pricingButton}</button>
-              </div>
-           </div>
-        </div>
-      </section>
-
-      {/* 10. FINAL CTA */}
-      <section className="py-40 px-6">
-        <div className="max-w-5xl mx-auto bg-slate-900 rounded-[60px] p-16 lg:p-24 text-center relative overflow-hidden reveal">
-           <div className="absolute inset-0 bg-gradient-to-tr from-dayone-orange/20 to-transparent"></div>
-           <div className="relative z-10">
-              <h2 className="text-4xl lg:text-7xl font-extrabold text-white mb-8 tracking-tighter uppercase leading-[0.9]">{t.ctaHeading}</h2>
-              <p className="text-slate-400 text-lg lg:text-xl font-medium mb-12 max-w-2xl mx-auto">{t.ctaSubheading}</p>
-              <button 
-                onClick={onStart}
-                className="bg-dayone-orange text-white px-12 py-6 rounded-2xl font-bold text-xl hover:scale-105 transition-all shadow-2xl shadow-orange-900/40"
-              >
-                {t.ctaButton}
-              </button>
            </div>
         </div>
       </section>
@@ -503,22 +470,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, lang, setLang }) => 
           </div>
         </div>
       </footer>
-
-      {/* FLOATING CHAT */}
-      <div className={`fixed bottom-6 ${isAr ? 'left-6' : 'right-6'} lg:bottom-10 lg:${isAr ? 'left-10' : 'right-10'} z-[100] group flex items-end ${isAr ? 'flex-row-reverse' : ''} space-x-4 rtl:space-x-reverse`}>
-         <div className="bg-white px-8 py-5 rounded-3xl shadow-2xl border border-slate-100 opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 duration-500 hidden sm:block">
-            <p className="text-[14px] font-bold text-slate-900 whitespace-nowrap">{t.chatBubble}</p>
-         </div>
-         <div className="w-16 h-16 lg:w-20 lg:h-20 bg-dayone-orange rounded-full flex items-center justify-center text-white shadow-2xl cursor-pointer hover:scale-110 transition-transform shadow-orange-100">
-            <svg className="w-8 h-8 lg:w-10 lg:h-10" fill="currentColor" viewBox="0 0 20 20"><path d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm4 0H9v2h2V9zm4 0h-2v2h2V9z"/></svg>
-         </div>
-      </div>
-      <style>{`
-         @keyframes loading {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
-         }
-      `}</style>
     </div>
   );
 };
