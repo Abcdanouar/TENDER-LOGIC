@@ -24,6 +24,17 @@ export enum UserRole {
   VIEWER = 'VIEWER'
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  role: UserRole;
+  subscriptionTier: SubscriptionTier;
+  createdAt: string;
+  provider: 'email' | 'google';
+}
+
 export interface Invitation {
   id: string;
   email?: string;
@@ -77,4 +88,4 @@ export interface ExportSettings {
   headerFooterText: string;
 }
 
-export type ViewState = 'landing' | 'dashboard' | 'analysis' | 'generator' | 'image-editor' | 'settings' | 'pricing' | 'team';
+export type ViewState = 'landing' | 'auth' | 'dashboard' | 'analysis' | 'generator' | 'image-editor' | 'settings' | 'pricing' | 'team' | 'admin-panel';

@@ -5,14 +5,24 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: true,
-    emptyOutDir: true
+    sourcemap: false,
+    emptyOutDir: true,
+    // زيادة الحد لتجنب تحذير "Some chunks are larger than 500 kB"
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // تقسيم المكتبات الكبيرة (مثل Recharts و Gemini SDK) في ملفات منفصلة لتحسين الأداء
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'recharts', '@google/genai'],
+        },
+      },
+    },
   },
   server: {
     port: 3000
   },
   define: {
-    // يجعل مفتاح API متاحاً في المتصفح عبر process.env.API_KEY
+    // تمرير مفتاح API من Vercel إلى المتصفح
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
   }
 });

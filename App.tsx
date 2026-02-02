@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { ViewState, Jurisdiction, TenderAnalysis, GeneratedResponse, CompanyProfile, UserSubscription, SubscriptionTier, Language } from './types.ts';
+import { ViewState, Jurisdiction, TenderAnalysis, GeneratedResponse, CompanyProfile, UserSubscription, SubscriptionTier, Language, User, UserRole } from './types.ts';
 import Sidebar from './components/Sidebar.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import FileUploadZone from './components/FileUploadZone.tsx';
@@ -12,6 +13,8 @@ import PricingView from './components/PricingView.tsx';
 import LandingPage from './components/LandingPage.tsx';
 import CheckoutModal from './components/CheckoutModal.tsx';
 import TeamWorkspace from './components/TeamWorkspace.tsx';
+import AuthView from './components/AuthView.tsx';
+import AdminDashboard from './components/AdminDashboard.tsx';
 import { GeminiService } from './services/geminiService.ts';
 import { PRICING_TIERS } from './constants.ts';
 
@@ -42,6 +45,7 @@ const App: React.FC = () => {
   const [proposal, setProposal] = useState<GeneratedResponse | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<SubscriptionTier | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   
   const [subscription, setSubscription] = useState<UserSubscription>({
     tier: SubscriptionTier.FREE,
@@ -75,6 +79,16 @@ const App: React.FC = () => {
     setActiveView('dashboard');
   };
 
+  const handleAuthSuccess = (authUser: User) => {
+    setUser(authUser);
+    setActiveView(authUser.role === UserRole.ADMIN ? 'admin-panel' : 'dashboard');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setActiveView('landing');
+  };
+
   const handleSelectPlan = (tierId: SubscriptionTier) => {
     if (tierId === SubscriptionTier.FREE) {
       handleUpgrade(SubscriptionTier.FREE);
@@ -84,6 +98,17 @@ const App: React.FC = () => {
   };
 
   const checkFeatureAccess = (view: ViewState): boolean => {
+    if (!user && view !== 'landing' && view !== 'auth') {
+       setActiveView('auth');
+       return false;
+    }
+
+    // حماية لوحة المسؤول
+    if (view === 'admin-panel' && user?.role !== UserRole.ADMIN) {
+       setActiveView('dashboard');
+       return false;
+    }
+
     if (view === 'generator' || view === 'image-editor' || view === 'team') {
        if (subscription.tier === SubscriptionTier.FREE) {
          setActiveView('pricing');
@@ -172,7 +197,15 @@ const App: React.FC = () => {
   if (activeView === 'landing') {
     return (
       <>
-        <LandingPage onStart={() => setActiveView('dashboard')} lang={lang} setLang={setLang} onSelectPlan={handleSelectPlan} />
+        <LandingPage 
+          onStart={() => setActiveView(user ? 'dashboard' : 'auth')} 
+          lang={lang} 
+          setLang={setLang} 
+          onSelectPlan={(tier) => {
+            if (!user) setActiveView('auth');
+            else handleSelectPlan(tier);
+          }} 
+        />
         {pendingPlan && (
           <CheckoutModal 
             tierId={pendingPlan} 
@@ -182,6 +215,16 @@ const App: React.FC = () => {
           />
         )}
       </>
+    );
+  }
+
+  if (activeView === 'auth') {
+    return (
+      <AuthView 
+        lang={lang} 
+        onAuthSuccess={handleAuthSuccess} 
+        onBack={() => setActiveView('landing')} 
+      />
     );
   }
 
@@ -229,13 +272,17 @@ const App: React.FC = () => {
         isOpen={isSidebarOpen}
         lang={lang}
         setLang={setLang}
+        onLogout={handleLogout}
+        user={user}
       />
       
       <main className={`flex-1 bg-[#fcfcfd] min-h-screen overflow-y-auto ${lang === Language.AR ? 'text-right' : 'text-left'}`}>
         <header className="hidden lg:flex sticky top-0 z-10 bg-[#fcfcfd]/80 backdrop-blur-md px-12 py-8 justify-between items-center border-b border-slate-100">
           <div className={lang === Language.AR ? 'text-right' : 'text-left'}>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
-              {activeView === 'dashboard' ? (lang === Language.AR ? 'نظرة عامة' : 'Overview') : activeView.replace('-', ' ')}
+              {activeView === 'admin-panel' ? (lang === Language.AR ? 'إدارة النظام' : 'System Admin') : 
+               activeView === 'dashboard' ? (lang === Language.AR ? 'نظرة عامة' : 'Overview') : 
+               activeView.replace('-', ' ')}
             </h1>
             <nav className={`flex items-center space-x-2 text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-widest rtl:space-x-reverse ${lang === Language.AR ? 'flex-row-reverse' : ''}`}>
               <span className="cursor-pointer hover:text-dayone-orange" onClick={() => setActiveView('landing')}>Home</span>
@@ -265,11 +312,13 @@ const App: React.FC = () => {
                 </button>
              </div>
              <div className="text-right rtl:text-left">
-                <p className="text-sm font-bold text-slate-900">Elite User</p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">{subscription.tier} License</p>
+                <p className="text-sm font-bold text-slate-900">{user?.name || 'User'}</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
+                   {user?.role === UserRole.ADMIN ? 'SUPER ADMIN' : `${subscription.tier} License`}
+                </p>
              </div>
-             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-400 border border-slate-200 cursor-pointer hover:border-dayone-orange transition-all">
-               EU
+             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-400 border border-slate-200 cursor-pointer hover:border-dayone-orange transition-all uppercase">
+               {user?.name?.[0] || 'U'}
              </div>
           </div>
         </header>
@@ -280,6 +329,10 @@ const App: React.FC = () => {
               onNewTender={() => navigateTo('analysis')} 
               jurisdiction={jurisdiction}
             />
+          )}
+
+          {activeView === 'admin-panel' && (
+            <AdminDashboard lang={lang} />
           )}
           
           {activeView === 'analysis' && !analysis && (
