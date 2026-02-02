@@ -16,6 +16,7 @@ import TeamWorkspace from './components/TeamWorkspace.tsx';
 import AuthView from './components/AuthView.tsx';
 import AdminDashboard from './components/AdminDashboard.tsx';
 import { GeminiService } from './services/geminiService.ts';
+import { backend } from './services/backendService.ts';
 import { PRICING_TIERS } from './constants.ts';
 
 const ANALYSIS_STEPS = [
@@ -63,70 +64,69 @@ const App: React.FC = () => {
 
   const gemini = new GeminiService();
 
+  // Load Initial Data from DB
+  useEffect(() => {
+    const init = async () => {
+      const savedUserId = localStorage.getItem('tl_user_id');
+      if (savedUserId) {
+        const dbUser = await backend.getUser(savedUserId);
+        if (dbUser) {
+          setUser(dbUser);
+          setSubscription(prev => ({ ...prev, tier: dbUser.subscriptionTier }));
+          const profile = await backend.getProfile(dbUser.id);
+          if (profile) setCompanyProfile(profile);
+          setActiveView(dbUser.role === UserRole.ADMIN ? 'admin-panel' : 'dashboard');
+        }
+      }
+    };
+    init();
+  }, []);
+
   useEffect(() => {
     document.documentElement.dir = lang === Language.AR ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const handleUpgrade = (tier: SubscriptionTier) => {
+  const handleAuthSuccess = async (authUser: User) => {
+    setUser(authUser);
+    localStorage.setItem('tl_user_id', authUser.id);
+    await backend.saveUser(authUser);
+    setActiveView(authUser.role === UserRole.ADMIN ? 'admin-panel' : 'dashboard');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('tl_user_id');
+    setActiveView('landing');
+  };
+
+  const handleUpgrade = async (tier: SubscriptionTier) => {
     const tierData = PRICING_TIERS.find(t => t.id === tier);
     setSubscription({
       tier,
       tendersUsed: 0,
       maxTenders: tierData?.limit ?? null
     });
+    if (user) {
+      const updatedUser = { ...user, subscriptionTier: tier };
+      setUser(updatedUser);
+      await backend.saveUser(updatedUser);
+    }
     setPendingPlan(null);
     setActiveView('dashboard');
   };
 
-  const handleAuthSuccess = (authUser: User) => {
-    setUser(authUser);
-    setActiveView(authUser.role === UserRole.ADMIN ? 'admin-panel' : 'dashboard');
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setActiveView('landing');
-  };
-
-  const handleSelectPlan = (tierId: SubscriptionTier) => {
-    if (tierId === SubscriptionTier.FREE) {
-      handleUpgrade(SubscriptionTier.FREE);
-    } else {
-      setPendingPlan(tierId);
-    }
-  };
-
-  const checkFeatureAccess = (view: ViewState): boolean => {
+  const navigateTo = (view: ViewState) => {
     if (!user && view !== 'landing' && view !== 'auth') {
        setActiveView('auth');
-       return false;
+       return;
     }
-
-    // حماية لوحة المسؤول
     if (view === 'admin-panel' && user?.role !== UserRole.ADMIN) {
        setActiveView('dashboard');
-       return false;
+       return;
     }
-
-    if (view === 'generator' || view === 'image-editor' || view === 'team') {
-       if (subscription.tier === SubscriptionTier.FREE) {
-         setActiveView('pricing');
-         return false;
-       }
-       if (view === 'team' && subscription.tier !== SubscriptionTier.ENTERPRISE) {
-         setActiveView('pricing');
-         return false;
-       }
-    }
-    return true;
-  };
-
-  const navigateTo = (view: ViewState) => {
-    if (checkFeatureAccess(view)) {
-      setActiveView(view);
-      setIsSidebarOpen(false);
-    }
+    setActiveView(view);
+    setIsSidebarOpen(false);
   };
 
   const simulateProgress = (steps: any[], onComplete: () => Promise<void>) => {
@@ -160,6 +160,9 @@ const App: React.FC = () => {
       await simulateProgress(ANALYSIS_STEPS, async () => {
         const result = await gemini.analyzeTender(fileContent, jurisdiction);
         setAnalysis(result);
+        if (user) {
+          await backend.saveTender(user.id, result);
+        }
         setSubscription(prev => ({ ...prev, tendersUsed: prev.tendersUsed + 1 }));
         setActiveView('analysis');
       });
@@ -172,11 +175,6 @@ const App: React.FC = () => {
 
   const handleGenerateProposal = async () => {
     if (!analysis) return;
-    if (subscription.tier === SubscriptionTier.FREE) {
-       setActiveView('pricing');
-       return;
-    }
-
     setLoading(true);
     setLoadingType('generation');
     setCurrentStepIndex(0);
@@ -194,185 +192,61 @@ const App: React.FC = () => {
     }
   };
 
+  const updateCompanyProfile = async (profile: CompanyProfile) => {
+    setCompanyProfile(profile);
+    if (user) await backend.saveProfile(user.id, profile);
+  };
+
   if (activeView === 'landing') {
     return (
-      <>
-        <LandingPage 
-          onStart={() => setActiveView(user ? 'dashboard' : 'auth')} 
-          lang={lang} 
-          setLang={setLang} 
-          onSelectPlan={(tier) => {
-            if (!user) setActiveView('auth');
-            else handleSelectPlan(tier);
-          }} 
-        />
-        {pendingPlan && (
-          <CheckoutModal 
-            tierId={pendingPlan} 
-            onClose={() => setPendingPlan(null)} 
-            onSuccess={() => handleUpgrade(pendingPlan)} 
-            lang={lang} 
-          />
-        )}
-      </>
+      <LandingPage 
+        onStart={() => navigateTo(user ? 'dashboard' : 'auth')} 
+        lang={lang} 
+        setLang={setLang} 
+        onSelectPlan={(tier) => {
+          if (!user) setActiveView('auth');
+          else setPendingPlan(tier);
+        }} 
+      />
     );
   }
 
   if (activeView === 'auth') {
-    return (
-      <AuthView 
-        lang={lang} 
-        onAuthSuccess={handleAuthSuccess} 
-        onBack={() => setActiveView('landing')} 
-      />
-    );
+    return <AuthView lang={lang} onAuthSuccess={handleAuthSuccess} onBack={() => setActiveView('landing')} />;
   }
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
-      {loading && (
-        <ProgressOverlay 
-          title={loadingType === 'analysis' ? "Processing Intel" : "Architecting Bid"}
-          steps={loadingType === 'analysis' ? ANALYSIS_STEPS : GENERATION_STEPS}
-          currentStepIndex={currentStepIndex}
-        />
-      )}
+      {loading && <ProgressOverlay title={loadingType === 'analysis' ? "Processing Intel" : "Architecting Bid"} steps={loadingType === 'analysis' ? ANALYSIS_STEPS : GENERATION_STEPS} currentStepIndex={currentStepIndex} />}
+      {pendingPlan && <CheckoutModal tierId={pendingPlan} onClose={() => setPendingPlan(null)} onSuccess={() => handleUpgrade(pendingPlan)} lang={lang} />}
 
-      {pendingPlan && (
-        <CheckoutModal 
-          tierId={pendingPlan} 
-          onClose={() => setPendingPlan(null)} 
-          onSuccess={() => handleUpgrade(pendingPlan)} 
-          lang={lang} 
-        />
-      )}
-
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white border-b border-slate-100 p-4 flex justify-between items-center sticky top-0 z-40">
-        <div className="flex items-center space-x-2">
-           <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold">TL</div>
-           <span className="font-extrabold text-slate-900 tracking-tight">TenderLogic</span>
-        </div>
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-2 text-slate-600"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isSidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16m-7 6h7"} />
-          </svg>
-        </button>
-      </div>
-
-      <Sidebar 
-        activeView={activeView} 
-        setActiveView={navigateTo} 
-        jurisdiction={jurisdiction}
-        setJurisdiction={setJurisdiction}
-        subscription={subscription}
-        isOpen={isSidebarOpen}
-        lang={lang}
-        setLang={setLang}
-        onLogout={handleLogout}
-        user={user}
-      />
+      <Sidebar activeView={activeView} setActiveView={navigateTo} jurisdiction={jurisdiction} setJurisdiction={setJurisdiction} subscription={subscription} isOpen={isSidebarOpen} lang={lang} setLang={setLang} onLogout={handleLogout} user={user} />
       
       <main className={`flex-1 bg-[#fcfcfd] min-h-screen overflow-y-auto ${lang === Language.AR ? 'text-right' : 'text-left'}`}>
         <header className="hidden lg:flex sticky top-0 z-10 bg-[#fcfcfd]/80 backdrop-blur-md px-12 py-8 justify-between items-center border-b border-slate-100">
-          <div className={lang === Language.AR ? 'text-right' : 'text-left'}>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
-              {activeView === 'admin-panel' ? (lang === Language.AR ? 'إدارة النظام' : 'System Admin') : 
-               activeView === 'dashboard' ? (lang === Language.AR ? 'نظرة عامة' : 'Overview') : 
-               activeView.replace('-', ' ')}
-            </h1>
-            <nav className={`flex items-center space-x-2 text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-widest rtl:space-x-reverse ${lang === Language.AR ? 'flex-row-reverse' : ''}`}>
-              <span className="cursor-pointer hover:text-dayone-orange" onClick={() => setActiveView('landing')}>Home</span>
-              <span>/</span>
-              <span className="text-dayone-orange">{activeView}</span>
-            </nav>
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">{activeView.replace('-', ' ')}</h1>
+            <p className="text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{user?.name} | {subscription.tier} License</p>
           </div>
           <div className="flex items-center space-x-6 rtl:space-x-reverse">
              <div className="flex bg-slate-100 rounded-lg p-1">
-                <button 
-                  onClick={() => setLang(Language.EN)}
-                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${lang === Language.EN ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-50'}`}
-                >
-                  EN
-                </button>
-                <button 
-                  onClick={() => setLang(Language.FR)}
-                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${lang === Language.FR ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-                >
-                  FR
-                </button>
-                <button 
-                  onClick={() => setLang(Language.AR)}
-                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${lang === Language.AR ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
-                >
-                  AR
-                </button>
+                <button onClick={() => setLang(Language.EN)} className={`px-3 py-1 text-[10px] font-bold rounded-md ${lang === Language.EN ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>EN</button>
+                <button onClick={() => setLang(Language.AR)} className={`px-3 py-1 text-[10px] font-bold rounded-md ${lang === Language.AR ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>AR</button>
              </div>
-             <div className="text-right rtl:text-left">
-                <p className="text-sm font-bold text-slate-900">{user?.name || 'User'}</p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
-                   {user?.role === UserRole.ADMIN ? 'SUPER ADMIN' : `${subscription.tier} License`}
-                </p>
-             </div>
-             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-400 border border-slate-200 cursor-pointer hover:border-dayone-orange transition-all uppercase">
-               {user?.name?.[0] || 'U'}
-             </div>
+             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-400 border border-slate-200 uppercase">{user?.name?.[0]}</div>
           </div>
         </header>
 
-        <div className="px-4 lg:px-12 pb-12 max-w-7xl mx-auto mt-6 lg:mt-0">
-          {activeView === 'dashboard' && (
-            <Dashboard 
-              onNewTender={() => navigateTo('analysis')} 
-              jurisdiction={jurisdiction}
-            />
-          )}
-
-          {activeView === 'admin-panel' && (
-            <AdminDashboard lang={lang} />
-          )}
-          
-          {activeView === 'analysis' && !analysis && (
-            <FileUploadZone onUpload={handleFileUpload} />
-          )}
-
-          {activeView === 'analysis' && analysis && (
-            <AnalysisResult 
-              analysis={analysis} 
-              onGenerate={handleGenerateProposal} 
-              isGenerating={loading}
-              tier={subscription.tier}
-              lang={lang}
-            />
-          )}
-
-          {activeView === 'generator' && proposal && (
-            <ResponseEditor proposal={proposal} />
-          )}
-
-          {activeView === 'image-editor' && (
-            <ImageEditor />
-          )}
-
-          {activeView === 'team' && (
-            <TeamWorkspace lang={lang} />
-          )}
-
-          {activeView === 'settings' && (
-            <SettingsView 
-              profile={companyProfile} 
-              onSave={setCompanyProfile} 
-              tier={subscription.tier}
-              lang={lang}
-            />
-          )}
-
-          {activeView === 'pricing' && (
-            <PricingView subscription={subscription} onUpgrade={handleSelectPlan} lang={lang} />
-          )}
+        <div className="px-4 lg:px-12 pb-12 max-w-7xl mx-auto mt-6">
+          {activeView === 'dashboard' && <Dashboard onNewTender={() => navigateTo('analysis')} jurisdiction={jurisdiction} />}
+          {activeView === 'admin-panel' && <AdminDashboard lang={lang} />}
+          {activeView === 'analysis' && !analysis && <FileUploadZone onUpload={handleFileUpload} />}
+          {activeView === 'analysis' && analysis && <AnalysisResult analysis={analysis} onGenerate={handleGenerateProposal} isGenerating={loading} tier={subscription.tier} lang={lang} />}
+          {activeView === 'generator' && proposal && <ResponseEditor proposal={proposal} />}
+          {activeView === 'image-editor' && <ImageEditor />}
+          {activeView === 'team' && <TeamWorkspace lang={lang} />}
+          {activeView === 'settings' && <SettingsView profile={companyProfile} onSave={updateCompanyProfile} tier={subscription.tier} lang={lang} />}
+          {activeView === 'pricing' && <PricingView subscription={subscription} onUpgrade={setPendingPlan} lang={lang} />}
         </div>
       </main>
     </div>

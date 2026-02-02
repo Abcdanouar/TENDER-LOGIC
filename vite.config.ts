@@ -1,3 +1,4 @@
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -13,7 +14,7 @@ export default defineConfig({
       output: {
         // تقسيم المكتبات الكبيرة (مثل Recharts و Gemini SDK) في ملفات منفصلة لتحسين الأداء
         manualChunks: {
-          vendor: ['react', 'react-dom', 'recharts', '@google/genai'],
+          vendor: ['react', 'react-dom', 'recharts', '@google/genai', 'dexie'],
         },
       },
     },
