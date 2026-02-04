@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Jurisdiction, TenderAnalysis, GeneratedResponse, CompanyProfile } from "../types.ts";
 import { JURISDICTION_CONFIGS } from "../constants.ts";
@@ -6,15 +7,16 @@ export class GeminiService {
   constructor() {}
 
   private getClient() {
-    // يتم حقن API_KEY بواسطة Vite عند البناء
-    return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    // API_KEY is injected by the build environment
+    // Use the process.env.API_KEY string directly as per guidelines
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   async analyzeTender(text: string, jurisdiction: Jurisdiction): Promise<TenderAnalysis> {
     const ai = this.getClient();
     const config = JURISDICTION_CONFIGS[jurisdiction];
     
-    // استخدام gemini-3-pro-preview للمهام التحليلية المعقدة
+    // Use 'gemini-3-pro-preview' for complex text reasoning and analysis
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: `Context: ${config.prompt}\n\nDocument Text:\n${text.substring(0, 500000)}`,
@@ -48,6 +50,7 @@ export class GeminiService {
     });
 
     try {
+      // Access response.text directly (getter property)
       return JSON.parse(response.text || '{}');
     } catch (e) {
       console.error("Failed to parse AI response:", e);
@@ -63,6 +66,7 @@ export class GeminiService {
       ? `### HISTORICAL CONTEXT ###\n${company.bidHistory}\n\n`
       : "";
 
+    // Use 'gemini-3-pro-preview' for professional content generation
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: `${ragContext}Tender Analysis: ${JSON.stringify(analysis)}\nCompany Profile: ${JSON.stringify(company)}`,
@@ -92,6 +96,7 @@ export class GeminiService {
 
   async generateProjectVisual(prompt: string): Promise<string | undefined> {
     const ai = this.getClient();
+    // Default to 'gemini-2.5-flash-image' for image generation
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -102,6 +107,7 @@ export class GeminiService {
       }
     });
 
+    // Guidelines: Iterate through all parts to find the image part (inlineData)
     for (const part of response.candidates?.[0]?.content.parts || []) {
       if (part.inlineData) {
         return `data:image/png;base64,${part.inlineData.data}`;
@@ -112,6 +118,7 @@ export class GeminiService {
 
   async editSchemaImage(base64Image: string, prompt: string): Promise<string | undefined> {
     const ai = this.getClient();
+    // Use 'gemini-2.5-flash-image' for editing existing images
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {

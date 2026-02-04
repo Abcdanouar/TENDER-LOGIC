@@ -1,6 +1,6 @@
 
-import { db, DBLog } from './db.ts';
-import { User, TenderAnalysis, CompanyProfile, SubscriptionTier } from '../types.ts';
+import { db, DBLog, TenderLogicDatabase } from './db.ts';
+import { User, TenderAnalysis, CompanyProfile } from '../types.ts';
 
 export class BackendService {
   async saveUser(user: User) {
@@ -77,8 +77,8 @@ export class BackendService {
     const text = await jsonFile.text();
     const data = JSON.parse(text);
     
-    // Fix: transaction method is inherited from the Dexie base class on the db instance
-    await db.transaction('rw', [db.users, db.tenders, db.logs, db.profiles], async () => {
+    // Explicitly casting db to TenderLogicDatabase to ensure 'transaction' method is found during type checking
+    await (db as TenderLogicDatabase).transaction('rw', [db.users, db.tenders, db.logs, db.profiles], async () => {
       await db.users.clear();
       await db.tenders.clear();
       await db.logs.clear();

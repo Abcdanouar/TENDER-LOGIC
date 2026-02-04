@@ -105,6 +105,20 @@ export interface TranslationSet {
   inviteSuccess: string;
   inviteLinkCreated: string;
   noPending: string;
+  settingsTitle: string;
+  settingsSub: string;
+  saveProfile: string;
+  changesSaved: string;
+  identityHistory: string;
+  technicalAssets: string;
+  legalName: string;
+  experienceStmt: string;
+  certsLabel: string;
+  projectsLabel: string;
+  enterpriseActive: string;
+  enterpriseOnly: string;
+  featureLocked: string;
+  upgradeEnterpriseRag: string;
 }
 
 export const translations: Record<Language, TranslationSet> = {
@@ -240,7 +254,21 @@ export const translations: Record<Language, TranslationSet> = {
     copyLink: "Copy Invite Link",
     inviteSuccess: "Invitation sent successfully!",
     inviteLinkCreated: "Invitation link generated!",
-    noPending: "No pending invitations."
+    noPending: "No pending invitations.",
+    settingsTitle: "Company Intelligence Profile",
+    settingsSub: "This data is used by Gemini to tailor technical proposals.",
+    saveProfile: "Save Profile",
+    changesSaved: "Changes Saved",
+    identityHistory: "Identity & History",
+    technicalAssets: "Technical Assets",
+    legalName: "Legal Entity Name",
+    experienceStmt: "Company Experience Statement",
+    certsLabel: "Certifications (One per line)",
+    projectsLabel: "Reference Projects (One per line)",
+    enterpriseActive: "Enterprise Feature Active",
+    enterpriseOnly: "Enterprise Only",
+    featureLocked: "Feature Locked",
+    upgradeEnterpriseRag: "Upgrade to Enterprise to enable custom RAG training."
   },
   [Language.FR]: {
     heroTag: "SaaS B2B Nouvelle Génération",
@@ -374,7 +402,21 @@ export const translations: Record<Language, TranslationSet> = {
     copyLink: "Copier le Lien",
     inviteSuccess: "Invitation envoyée avec succès !",
     inviteLinkCreated: "Lien d'invitation généré !",
-    noPending: "Aucune invitation en attente."
+    noPending: "Aucune invitation en attente.",
+    settingsTitle: "Profil Entreprise Intelligent",
+    settingsSub: "Ces données sont utilisées par Gemini pour personnaliser les propositions techniques.",
+    saveProfile: "Enregistrer le Profil",
+    changesSaved: "Changements Enregistrés",
+    identityHistory: "Identité & Historique",
+    technicalAssets: "Actifs Techniques",
+    legalName: "Nom de l'Entité Légale",
+    experienceStmt: "Déclaration d'Expérience",
+    certsLabel: "Certifications (Une par ligne)",
+    projectsLabel: "Projets de Référence (Un par ligne)",
+    enterpriseActive: "Fonction Entreprise Active",
+    enterpriseOnly: "Enterprise Uniquement",
+    featureLocked: "Fonction Verrouillée",
+    upgradeEnterpriseRag: "Passez à Enterprise pour activer l'entraînement RAG personnalisé."
   },
   [Language.AR]: {
     heroTag: "جيل جديد من برمجيات الـ SaaS",
@@ -508,6 +550,20 @@ export const translations: Record<Language, TranslationSet> = {
     copyLink: "نسخ رابط الدعوة",
     inviteSuccess: "تم إرسال الدعوة بنجاح!",
     inviteLinkCreated: "تم إنشاء رابط الدعوة!",
-    noPending: "لا توجد دعوات معلقة."
+    noPending: "لا توجد دعوات معلقة.",
+    settingsTitle: "ملف تعريف ذكاء الشركة",
+    settingsSub: "تُستخدم هذه البيانات بواسطة Gemini لتخصيص العروض التقنية.",
+    saveProfile: "حفظ الملف الشخصي",
+    changesSaved: "تم حفظ التغييرات",
+    identityHistory: "الهوية والتاريخ",
+    technicalAssets: "الأصول التقنية",
+    legalName: "الاسم القانوني للكيان",
+    experienceStmt: "بيان خبرة الشركة",
+    certsLabel: "الشهادات (واحدة في كل سطر)",
+    projectsLabel: "المشاريع المرجعية (واحدة في كل سطر)",
+    enterpriseActive: "ميزة المؤسسات نشطة",
+    enterpriseOnly: "للمؤسسات فقط",
+    featureLocked: "الميزة مقفولة",
+    upgradeEnterpriseRag: "قم بالترقية إلى باقة المؤسسات لتمكين تدريب RAG المخصص."
   }
 };
